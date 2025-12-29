@@ -21,11 +21,22 @@ def get_clients(db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
-    client = Client(**payload.dict())
+    client = Client(
+        name=payload.name,
+        phone=payload.phone,
+        monthly_amount=payload.monthly_amount,
+        paid_amount=payload.paid_amount or 0,
+        unpaid_amount=payload.unpaid_amount,   # 👈 UI decides
+        due_date=payload.due_date,
+        priority=payload.priority,
+        status="active",
+    )
+
     db.add(client)
     db.commit()
     db.refresh(client)
     return client
+
 
 @router.put("/{client_id}")
 def update_client(
@@ -41,6 +52,8 @@ def update_client(
     client.name = payload.name
     client.phone = payload.phone
     client.monthly_amount = payload.monthly_amount
+    client.paid_amount = payload.paid_amount or 0
+    client.unpaid_amount = payload.unpaid_amount   # 👈 UI decides
     client.due_date = payload.due_date
     client.priority = payload.priority
 

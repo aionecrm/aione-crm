@@ -1,23 +1,40 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react"
-import { getDashboardStats } from "@/lib/api"
+import { useEffect, useState } from "react";
+import { getClients } from "@/lib/api";
 
-type Stats = {
-  total_clients: number
-  active_clients: number
-  pending_amount: number
-  monthly_revenue: number
-}
+type Client = {
+  id: string;
+  status: string;
+  unpaid_amount: number;
+  paid_amount: number;
+};
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
-    getDashboardStats()
-      .then(setStats)
-      .catch(console.error)
-  }, [])
+    getClients()
+      .then(setClients)
+      .catch(console.error);
+  }, []);
+
+  // ✅ UI-only calculations
+  const totalClients = clients.length;
+
+  const activeClients = clients.filter(
+    (c) => c.status === "active"
+  ).length;
+
+  const pendingAmount = clients.reduce(
+    (sum, c) => sum + Number(c.unpaid_amount || 0),
+    0
+  );
+
+  const monthlyRevenue = clients.reduce(
+    (sum, c) => sum + Number(c.paid_amount || 0),
+    0
+  );
 
   return (
     <div className="space-y-8">
@@ -26,23 +43,17 @@ export default function DashboardPage() {
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Total Clients" value={stats?.total_clients ?? "—"} />
-        <KpiCard title="Active Clients" value={stats?.active_clients ?? "—"} />
-        <KpiCard
-          title="Pending Amount"
-          value={stats ? `₹${stats.pending_amount}` : "—"}
-        />
-        <KpiCard
-          title="Monthly Revenue"
-          value={stats ? `₹${stats.monthly_revenue}` : "—"}
-        />
+        <KpiCard title="Total Clients" value={totalClients} />
+        <KpiCard title="Active Clients" value={activeClients} />
+        <KpiCard title="Pending Amount" value={`₹${pendingAmount}`} />
+        <KpiCard title="Monthly Revenue" value={`₹${monthlyRevenue}`} />
       </div>
 
       <div className="bg-[#13141A] border border-[#1F2028] rounded-lg p-6 text-sm text-[#9A9AA3]">
         Analytics & charts will appear here
       </div>
     </div>
-  )
+  );
 }
 
 function KpiCard({ title, value }: { title: string; value: string | number }) {
@@ -55,5 +66,5 @@ function KpiCard({ title, value }: { title: string; value: string | number }) {
         {value}
       </p>
     </div>
-  )
+  );
 }

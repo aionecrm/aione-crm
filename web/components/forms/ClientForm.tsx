@@ -1,27 +1,28 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import { createClient, updateClient } from "@/lib/api"
+import { useState } from "react";
+import { createClient, updateClient } from "@/lib/api";
 
 type ClientFormProps = {
-  onClose: () => void
-  onCreated: () => void
+  onClose: () => void;
+  onCreated: () => void;
   initialData?: {
-    id: string
-    name: string
-    phone: string
-    monthly_amount: number
-    due_date: string
-    priority: boolean
-  }
-}
+    id: string;
+    name: string;
+    phone: string;
+    monthly_amount: number;
+    paid_amount: number;
+    due_date: string;
+    priority: boolean;
+  };
+};
 
 type InputProps = {
-  value: string | number
-  onChange: (value: string) => void
-  placeholder?: string
-  type?: string
-}
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+};
 
 export default function ClientForm({
   onClose,
@@ -32,50 +33,69 @@ export default function ClientForm({
     name: initialData?.name ?? "",
     phone: initialData?.phone ?? "",
     monthly_amount: initialData?.monthly_amount?.toString() ?? "",
+    paid_amount: initialData?.paid_amount?.toString() ?? "",
     due_date: initialData?.due_date ?? "",
     priority: initialData?.priority ?? false,
-  })
+  });
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+    e.preventDefault();
 
-    const amount = Number(form.monthly_amount)
+    const totalAmount = Number(form.monthly_amount);
+    const paidAmount = Number(form.paid_amount || 0);
 
-    if (!form.name || !form.phone || !form.due_date || amount <= 0) {
-      alert("Please fill all fields correctly")
-      return
+    if (
+      !form.name ||
+      !form.phone ||
+      !form.due_date ||
+      totalAmount <= 0
+    ) {
+      alert("Please fill all fields correctly");
+      return;
     }
 
-    setLoading(true)
+    if (paidAmount > totalAmount) {
+      alert("Paid amount cannot be greater than total amount");
+      return;
+    }
+
+    const unpaidAmount = totalAmount - paidAmount;
+
+    setLoading(true);
 
     try {
       if (initialData?.id) {
         await updateClient(initialData.id, {
           name: form.name.trim(),
           phone: form.phone.trim(),
-          monthly_amount: amount,
+          monthly_amount: totalAmount,
+          paid_amount: paidAmount,
+          unpaid_amount: unpaidAmount,
           due_date: form.due_date,
           priority: form.priority,
-        })
+        });
       } else {
         await createClient({
           name: form.name.trim(),
           phone: form.phone.trim(),
-          monthly_amount: amount,
+          monthly_amount: totalAmount,
+          paid_amount: paidAmount,
+          unpaid_amount: unpaidAmount,
           due_date: form.due_date,
           priority: form.priority,
-        })
+          status: "active",
+        });
       }
 
-      onCreated()
-      onClose()
+      onCreated();
+      onClose();
     } catch (err) {
-      console.error(err)
-      alert("Failed to save client")
+      console.error(err);
+      alert("Failed to save client");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -104,8 +124,10 @@ export default function ClientForm({
         <Input
           type="number"
           value={form.monthly_amount}
-          placeholder="Monthly Amount"
-          onChange={(v) => setForm({ ...form, monthly_amount: v })}
+          placeholder="Amount"
+          onChange={(v) =>
+            setForm({ ...form, monthly_amount: v })
+          }
         />
 
         <Input
@@ -113,7 +135,27 @@ export default function ClientForm({
           value={form.due_date}
           onChange={(v) => setForm({ ...form, due_date: v })}
         />
+
+        <Input
+          type="number"
+          value={form.paid_amount}
+          placeholder="Paid Amount"
+          onChange={(v) =>
+            setForm({ ...form, paid_amount: v })
+          }
+        />
       </div>
+
+      {Number(form.monthly_amount) > 0 && (
+        <p className="mt-3 text-sm text-gray-400">
+          Unpaid Amount: ₹
+          {Math.max(
+            Number(form.monthly_amount) -
+              Number(form.paid_amount || 0),
+            0
+          )}
+        </p>
+      )}
 
       <label className="flex items-center gap-2 mt-4 text-sm">
         <input
@@ -148,7 +190,7 @@ export default function ClientForm({
         </button>
       </div>
     </form>
-  )
+  );
 }
 
 function Input({
@@ -165,5 +207,5 @@ function Input({
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-md px-3 py-2 bg-[#0F1015] border border-[#2A2B33]"
     />
-  )
+  );
 }

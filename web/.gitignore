@@ -43,7 +43,10 @@ next-env.d.ts
 # Python cache
 __pycache__/
 *.pyc
+<<<<<<< HEAD
 
 # Virtual environments
 .venv/
 env/
+=======
+>>>>>>> feature-paid-unpaid-amount
