@@ -1,188 +1,156 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react"
-import ClientForm from "@/components/forms/ClientForm"
-import { getClients, deleteClient } from "@/lib/api"
+import { useEffect, useState } from "react";
+import ClientForm from "@/components/forms/ClientForm";
+import { getClients, deleteClient } from "@/lib/api";
+
+type Client = {
+  id: string;
+  name: string;
+  phone: string;
+  monthly_amount: number;
+  paid_amount: number;
+  unpaid_amount: number;
+  due_date: string;
+  priority: boolean;
+  status: string;
+};
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<any[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [editClient, setEditClient] = useState<any | null>(null)
+  const [clients, setClients] = useState<Client[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   async function loadClients() {
-    const data = await getClients()
-    setClients(data)
+    const data = await getClients();
+    setClients(data);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this client?")) return;
+    await deleteClient(id);
+    loadClients();
   }
 
   useEffect(() => {
-    loadClients()
-  }, [])
+    loadClients();
+  }, []);
 
   return (
-    <div className="space-y-6">
-
+    <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium tracking-tight">
-          Clients
-        </h1>
-
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl font-semibold">Clients</h1>
         <button
-          onClick={() => setShowForm(true)}
-          className="
-            px-4 py-2 rounded-md text-sm
-            bg-[#1E2040] text-[#C7CBFF]
-            border border-[#2A2D55]
-            hover:bg-[#272A5A]
-            hover:shadow-[0_0_12px_rgba(120,130,255,0.25)]
-            transition-all
-          "
+          onClick={() => {
+            setEditingClient(null);
+            setShowForm(true);
+          }}
+          className="px-4 py-2 bg-white text-black rounded-md"
         >
           + Add Client
         </button>
       </div>
 
-      {(showForm || editClient) && (
+      {/* Form */}
+      {showForm && (
         <ClientForm
-          initialData={editClient}
+          initialData={editingClient ?? undefined}
           onClose={() => {
-            setShowForm(false)
-            setEditClient(null)
+            setShowForm(false);
+            setEditingClient(null);
           }}
           onCreated={loadClients}
         />
       )}
 
       {/* Table */}
-      <div
-        className="
-          bg-gradient-to-br from-[#10121A] to-[#0B0C11]
-          border border-[#1F2028]
-          rounded-2xl
-          overflow-hidden
-        "
-      >
+      <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="text-xs uppercase tracking-widest text-[#8A8B94]">
+          <thead className="bg-white/5 text-gray-400">
             <tr>
-              <th className="px-6 py-4 text-left">Client</th>
-              <th className="px-6 py-4 text-left">Phone</th>
-              <th className="px-6 py-4 text-left">Amount</th>
-              <th className="px-6 py-4 text-left">Due Date</th>
-              <th className="px-6 py-4 text-left">Priority</th>
-              <th className="px-6 py-4 text-left">Status</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+              <th className="p-4 text-left">Client</th>
+              <th className="p-4 text-left">Phone</th>
+              <th className="p-4 text-right">Amount</th>
+              <th className="p-4 text-right">Paid</th>
+              <th className="p-4 text-right">Unpaid</th>
+              <th className="p-4 text-center">Due Date</th>
+              <th className="p-4 text-center">Priority</th>
+              <th className="p-4 text-center">Status</th>
+              <th className="p-4 text-center">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {clients.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-6 py-10 text-center text-[#6B6B75]"
-                >
-                  No clients found
+            {clients.map((c) => (
+              <tr
+                key={c.id}
+                className="border-t border-white/10 hover:bg-white/5"
+              >
+                <td className="p-4 font-medium">{c.name}</td>
+                <td className="p-4 text-gray-400">{c.phone}</td>
+
+                <td className="p-4 text-right text-blue-400">
+                  ₹{Number(c.monthly_amount)}
+                </td>
+
+                <td className="p-4 text-right text-green-400">
+                  ₹{Number(c.paid_amount)}
+                </td>
+
+                <td className="p-4 text-right text-red-400">
+                  ₹{Number(c.unpaid_amount)}
+                </td>
+
+                <td className="p-4 text-center">{c.due_date}</td>
+
+                <td className="p-4 text-center">
+                  {c.priority ? (
+                    <span className="px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs">
+                      VIP
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+
+                <td className="p-4 text-center text-green-400">
+                  {c.status}
+                </td>
+
+                <td className="p-4 text-center space-x-3">
+                  <button
+                    className="text-blue-400 hover:underline"
+                    onClick={() => {
+                      setEditingClient(c);
+                      setShowForm(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="text-red-400 hover:underline"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
-            ) : (
-              clients.map((c) => (
-                <tr
-                  key={c.id}
-                  className="
-                    border-t border-[#1F2028]
-                    hover:bg-[#14151C]/60
-                    transition
-                  "
+            ))}
+
+            {clients.length === 0 && (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="p-6 text-center text-gray-500"
                 >
-                  {/* Client */}
-                  <td className="px-6 py-4 text-white font-medium">
-                    {c.name}
-                  </td>
-
-                  {/* Phone */}
-                  <td className="px-6 py-4 text-[#9A9AA3]">
-                    {c.phone}
-                  </td>
-
-                  {/* Amount */}
-                  <td className="px-6 py-4 text-[#7AA2FF] font-medium">
-                    ₹{c.monthly_amount}
-                  </td>
-
-                  {/* Due Date */}
-                  <td className="px-6 py-4 text-[#CFCFD6]">
-                    {c.due_date
-                      ? new Date(c.due_date).toLocaleDateString()
-                      : "—"}
-                  </td>
-
-                  {/* Priority */}
-                  <td className="px-6 py-4">
-                    {c.priority ? (
-                      <span
-                        className="
-                          px-2 py-1 text-xs rounded-full
-                          bg-[#1E2040] text-[#9DA2FF]
-                          border border-[#2A2D55]
-                        "
-                      >
-                        VIP
-                      </span>
-                    ) : (
-                      <span className="text-[#6B6B75]">—</span>
-                    )}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4">
-                    <span
-                      className="
-                        text-emerald-400
-                        font-medium
-                      "
-                    >
-                      {c.status ?? "Active"}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-4 text-sm">
-                      <button
-                        onClick={() => setEditClient(c)}
-                        className="
-                          text-[#7AA2FF]
-                          hover:text-[#9DA2FF]
-                          transition
-                        "
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={async () => {
-                          if (!confirm("Delete this client?")) return
-                          await deleteClient(c.id)
-                          loadClients()
-                        }}
-                        className="
-                          text-red-400
-                          hover:text-red-300
-                          transition
-                        "
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                  No clients added yet
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
-
     </div>
-  )
+  );
 }
